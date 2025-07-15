@@ -190,6 +190,12 @@ export class DatabaseService {
 
   async getUserWallet(userId) {
     try {
+      // Validate parameters
+      if (!userId) {
+        console.warn('getUserWallet: Missing userId parameter');
+        return null;
+      }
+
       return await this.get(`
         SELECT * FROM user_wallets WHERE user_id = ?
       `, [userId.toString()]);
@@ -360,6 +366,12 @@ export class DatabaseService {
 
   async getUserMessages(userId, chatId, startDate) {
     try {
+      // Validate parameters
+      if (!userId || !chatId || !startDate) {
+        console.warn('getUserMessages: Missing required parameters', { userId, chatId, startDate });
+        return [];
+      }
+
       const messages = await this.all(`
         SELECT * FROM messages 
         WHERE user_id = ? AND chat_id = ? AND date >= ?
@@ -375,6 +387,12 @@ export class DatabaseService {
 
   async getMessageInteractions(userId, chatId, startDate) {
     try {
+      // Validate parameters
+      if (!userId || !chatId || !startDate) {
+        console.warn('getMessageInteractions: Missing required parameters', { userId, chatId, startDate });
+        return { replies: 0, mentions: 0 };
+      }
+
       // Get replies to user's messages
       const replies = await this.get(`
         SELECT COUNT(*) as count
@@ -396,6 +414,12 @@ export class DatabaseService {
 
   async getUserActivityHours(userId, chatId, startDate) {
     try {
+      // Validate parameters
+      if (!userId || !chatId || !startDate) {
+        console.warn('getUserActivityHours: Missing required parameters', { userId, chatId, startDate });
+        return [];
+      }
+
       const hours = await this.all(`
         SELECT DISTINCT CAST(strftime('%H', date) AS INTEGER) as hour
         FROM messages 

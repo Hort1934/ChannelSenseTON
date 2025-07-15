@@ -115,33 +115,33 @@ I'm your AI-powered channel analytics assistant with TON blockchain integration.
 Type /help for quick commands list!
         `;
       } else {
-        const chatTitle = msg.chat.title || (chatType === 'group' ? 'группе' : 'канале');
+        const chatTitle = msg.chat.title || (chatType === 'group' ? 'group' : 'channel');
         welcomeMessage = `
-🎉 *ChannelSense TON активирован в "${chatTitle}"!*
+🎉 *ChannelSense TON activated in "${chatTitle}"!*
 
-Привет! Я ваш AI-помощник для анализа активности и награждения участников NFT.
+Hello! I'm your AI assistant for activity analysis and rewarding participants with NFTs.
 
-🚀 *Что я умею в этом ${chatType === 'group' ? 'группе' : 'канале'}:*
-• 📊 Анализировать активность и вовлеченность
-• 👥 Определять самых активных участников  
-• 🎭 Анализировать настроение сообщества
-• 💎 Награждать еженедельными NFT топ-участников
+🚀 *What I can do in this ${chatType === 'group' ? 'group' : 'channel'}:*
+• 📊 Analyze activity and engagement
+• 👥 Identify most active participants  
+• 🎭 Analyze community sentiment
+• 💎 Reward weekly top contributors with NFTs
 
-📋 *Доступные команды:*
-• /analyze - анализ активности
-• /top - рейтинг участников
-• /sentiment - настроение сообщества  
-• /rewards - проверка NFT наград
-• /guide - подробная инструкция
+📋 *Available commands:*
+• /analyze - activity analysis
+• /top - participant ranking
+• /sentiment - community sentiment  
+• /rewards - check NFT rewards
+• /guide - detailed instructions
 
-💰 *Как получить NFT награды:*
-1. Будьте активны (мин. 10 сообщений/неделю)
-2. Подключите TON кошелек: напишите мне /connect в личных сообщениях
-3. Попадите в топ-3 на еженедельном отчете!
+💰 *How to get NFT rewards:*
+1. Be active (min. 10 messages/week)
+2. Connect TON wallet: message me /connect in private
+3. Get into top-3 on weekly report!
 
-🏆 *Еженедельные награды* каждое воскресенье для топ-3 участников!
+🏆 *Weekly rewards* every Sunday for top-3 participants!
 
-Начните с команды /analyze чтобы увидеть текущую статистику! 📈
+Start with /analyze command to see current statistics! 📈
         `;
       }
 
@@ -150,28 +150,40 @@ Type /help for quick commands list!
 
     // Connect wallet command
     this.bot.onText(/\/connect/, async (msg) => {
+      console.log('Connect command received:', {
+        chatId: msg.chat.id,
+        chatType: msg.chat.type,
+        userId: msg.from.id,
+        username: msg.from.username
+      });
+
       const chatId = msg.chat.id;
       const userId = msg.from.id;
 
       try {
         // Check if wallet is already connected
+        console.log('Checking connection status for user:', userId);
         const connectionStatus = await this.tonConnect.checkConnectionStatus(userId);
+        console.log('Connection status result:', connectionStatus);
         
         if (connectionStatus.connected) {
           await this.bot.sendMessage(chatId, 
             `✅ *Wallet Already Connected!*\n\nAddress: ${connectionStatus.wallet.address}\n\nYou're ready to receive NFT rewards!`,
-            {}
+            { parse_mode: 'Markdown' }
           );
           return;
         }
 
+        console.log('Generating connect link for user:', userId);
         const { connectUrl } = await this.tonConnect.generateConnectLink(userId);
+        console.log('Generated connect URL:', connectUrl);
         
         const keyboard = {
           inline_keyboard: [
-            [{ text: '🔗 Connect Wallet', url: connectUrl }],
-            [{ text: '📱 Open in Tonkeeper', url: connectUrl }],
-            [{ text: '🔄 Check Status', callback_data: `check_connection_${userId}` }]
+            [{ text: '🔗 Connect Wallet (Web)', url: connectUrl }],
+            [{ text: '📱 Open in Tonkeeper App', url: `https://app.tonkeeper.com/ton-connect?${connectUrl.split('?')[1]}` }],
+            [{ text: '🔄 Check Status', callback_data: `check_connection_${userId}` }],
+            [{ text: '🧪 Simulate Connection (Test)', callback_data: `simulate_connection_${userId}` }]
           ]
         };
 
@@ -182,12 +194,14 @@ Type /help for quick commands list!
           `• Receive NFT rewards for activity\n` +
           `• Access exclusive features\n` +
           `• Participate in governance\n\n` +
-          `🔗 Connection link: ${connectUrl}\n\n` +
           `⏱️ *Waiting for connection...*`,
           {
-            reply_markup: keyboard
+            reply_markup: keyboard,
+            parse_mode: 'Markdown'
           }
         );
+
+        console.log('Connect message sent, message ID:', connectMessage.message_id);
 
         // Wait for connection with timeout
         this.waitForWalletConnection(userId, chatId, connectMessage.message_id);
@@ -374,10 +388,11 @@ Commands:
 • /top [number] - Show top users (default: 10)
 • /sentiment - Analyze channel sentiment
 • /rewards - Check your NFT rewards
+• /guide - Complete usage guide
 • /help - Show this help
 
 How it works:
-1. Add me to your Telegram group
+1. Add me to your Telegram group as admin
 2. I'll analyze messages and user activity
 3. Top contributors get NFT rewards weekly
 4. Connect wallet to receive rewards
@@ -402,87 +417,87 @@ Need help? Contact support: @channelsense_support`;
       
       if (chatType === 'private') {
         guideMessage = `
-📖 *ChannelSense TON - Полное руководство*
+📖 *ChannelSense TON - Complete Guide*
 
-*🚀 Для групп и каналов:*
+*🚀 For groups and channels:*
 
-*1. Добавление бота в группу/канал:*
-• Добавьте меня как администратора
-• Дайте права на чтение/отправку сообщений
-• Для каналов: права на публикацию
+*1. Adding bot to group/channel:*
+• Add me as an administrator
+• Give rights to read/send messages
+• For channels: publishing rights
 
-*2. Основные команды:*
-• /analyze - анализ активности
-• /top - топ участников  
-• /sentiment - настроение сообщества
-• /rewards - проверка NFT наград
+*2. Main commands:*
+• /analyze - activity analysis
+• /top - top participants  
+• /sentiment - community sentiment
+• /rewards - check NFT rewards
 
-*3. Система наград:*
-• Еженедельные NFT для топ-3 участников
-• Минимум 10 сообщений за неделю
-• Обязательно подключение кошелька (/connect)
+*3. Reward system:*
+• Weekly NFTs for top-3 participants
+• Minimum 10 messages per week
+• TON wallet connection required (/connect)
 
-*4. Подключение кошелька:*
-• Используйте /connect в личных сообщениях
-• Сканируйте QR-код в Tonkeeper
-• Подтвердите подключение
+*4. Wallet connection:*
+• Use /connect in private messages
+• Scan QR code in Tonkeeper
+• Confirm connection
 
-*5. Еженедельные отчеты:*
-• Автоматически каждое воскресенье
-• Полная статистика активности
-• AI-рекомендации для улучшения
+*5. Weekly reports:*
+• Automatically every Sunday
+• Complete activity statistics
+• AI recommendations for improvement
 
-💡 *Советы:*
-• Больше качественных сообщений = больше шансов на NFT
-• Бот учитывает не только количество, но и качество
-• Активно участвуйте в обсуждениях
+💡 *Tips:*
+• More quality messages = better chances for NFT
+• Bot considers quality, not just quantity
+• Actively participate in discussions
 
-🔗 *Поддержка:* @channelsense_support
+🔗 *Support:* @channelsense_support
 `;
       } else {
         guideMessage = `
-📖 *Руководство по использованию в этом ${chatType === 'group' ? 'группе' : 'канале'}*
+📖 *Usage guide for this ${chatType === 'group' ? 'group' : 'channel'}*
 
-*🎯 Доступные команды здесь:*
+*🎯 Available commands here:*
 
-/analyze - *Анализ активности*
-• Статистика за день/неделю/месяц
-• Топ участников по активности  
-• AI-анализ тем обсуждений
+/analyze - *Activity Analysis*
+• Statistics for day/week/month
+• Top participants by activity  
+• AI analysis of discussion topics
 
-/top - *Рейтинг участников*
-• Показать топ-10 самых активных
-• Можно указать число: /top 5
+/top - *Participant Ranking*
+• Show top-10 most active
+• You can specify number: /top 5
 
-/sentiment - *Анализ настроения*
-• Общее настроение сообщества
-• Анализ эмоций в сообщениях
-• Тренды обсуждений
+/sentiment - *Sentiment Analysis*
+• Overall community mood
+• Emotion analysis in messages
+• Discussion trends
 
-/rewards - *NFT награды*
-• Кто получил награды на этой неделе
-• История прошлых наград
+/rewards - *NFT Rewards*
+• Who received rewards this week
+• History of past rewards
 
-*💎 Как получить NFT награду:*
+*💎 How to get NFT reward:*
 
-1. *Будьте активны* - минимум 10 сообщений в неделю
-2. *Подключите кошелек* - напишите мне /connect в личных сообщениях
-3. *Участвуйте качественно* - бот анализирует не только количество, но и ценность ваших сообщений
+1. *Be active* - minimum 10 messages per week
+2. *Connect wallet* - message me /connect in private
+3. *Participate with quality* - bot analyzes value of your messages, not just quantity
 
-*📊 Еженедельный отчет:*
-Каждое воскресенье я публикую полный анализ активности и награждаю топ-3 участников уникальными NFT!
+*📊 Weekly report:*
+Every Sunday I publish a complete activity analysis and reward top-3 participants with unique NFTs!
 
-*🤖 AI возможности:*
-• Анализ тем обсуждений
-• Определение настроения сообщества  
-• Персональные рекомендации
-• Выявление трендов
+*🤖 AI capabilities:*
+• Discussion topic analysis
+• Community sentiment detection  
+• Personal recommendations
+• Trend identification
 
-💬 Для полной инструкции напишите мне /guide в личных сообщениях
+💬 For complete instructions, message me /guide in private
 `;
       }
       
-      await this.bot.sendMessage(chatId, guideMessage);
+      await this.bot.sendMessage(chatId, guideMessage, { parse_mode: 'Markdown' });
     });
   }
 
@@ -530,6 +545,12 @@ Need help? Contact support: @channelsense_support`;
     this.bot.on('callback_query', async (callbackQuery) => {
       try {
         const { data, from, message } = callbackQuery;
+        console.log('Callback query received:', {
+          data,
+          userId: from.id,
+          username: from.username,
+          chatId: message.chat.id
+        });
         
         if (data.startsWith('connect_')) {
           const userId = data.split('_')[1];
@@ -537,6 +558,9 @@ Need help? Contact support: @channelsense_support`;
         } else if (data.startsWith('check_connection_')) {
           const userId = parseInt(data.split('_')[2]);
           await this.handleConnectionCheck(userId, from, message);
+        } else if (data.startsWith('simulate_connection_')) {
+          const userId = parseInt(data.split('_')[2]);
+          await this.handleSimulateConnection(userId, from, message);
         }
 
         await this.bot.answerCallbackQuery(callbackQuery.id);
@@ -572,7 +596,8 @@ Stay active and earn NFT rewards! 🎁
 
         try {
           await this.bot.sendMessage(chatId, welcomeMessage, { 
-            reply_to_message_id: msg.message_id 
+            reply_to_message_id: msg.message_id,
+            parse_mode: 'Markdown'
           });
         } catch (error) {
           console.error('Welcome message error:', error);
@@ -583,10 +608,14 @@ Stay active and earn NFT rewards! 🎁
 
   async handleWalletConnection(userId, from, message) {
     try {
+      console.log('Handling wallet connection for user:', userId);
       const walletInfo = await this.tonConnect.getWalletInfo(userId);
+      console.log('Wallet info retrieved:', walletInfo);
       
       if (walletInfo) {
+        console.log('Saving wallet to database...');
         await this.database.saveUserWallet(userId, walletInfo);
+        console.log('Wallet saved successfully');
         
         await this.bot.editMessageText(
           `✅ Wallet Connected Successfully!\n\n` +
@@ -594,9 +623,12 @@ Stay active and earn NFT rewards! 🎁
           `You're now eligible for NFT rewards!`,
           {
             chat_id: message.chat.id,
-            message_id: message.message_id
+            message_id: message.message_id,
+            parse_mode: 'Markdown'
           }
         );
+      } else {
+        console.log('No wallet info found for user:', userId);
       }
     } catch (error) {
       console.error('Wallet connection handler error:', error);
@@ -605,11 +637,15 @@ Stay active and earn NFT rewards! 🎁
 
   async handleConnectionCheck(userId, from, message) {
     try {
+      console.log('Checking connection status for user:', userId);
       const connectionStatus = await this.tonConnect.checkConnectionStatus(userId);
+      console.log('Connection status result:', connectionStatus);
       
       if (connectionStatus.connected) {
+        console.log('Wallet is connected, saving to database...');
         // Save wallet to database if not already saved
         await this.database.saveUserWallet(userId, connectionStatus.wallet);
+        console.log('Wallet saved successfully');
         
         await this.bot.editMessageText(
           `✅ Wallet Connected Successfully!\n\n` +
@@ -617,15 +653,18 @@ Stay active and earn NFT rewards! 🎁
           `You're now eligible for NFT rewards! 🎉`,
           {
             chat_id: message.chat.id,
-            message_id: message.message_id
+            message_id: message.message_id,
+            parse_mode: 'Markdown'
           }
         );
       } else if (connectionStatus.pending) {
+        console.log('Connection still pending for user:', userId);
         await this.bot.answerCallbackQuery(from.id, {
           text: '⏳ Still waiting for wallet connection...',
           show_alert: false
         });
       } else {
+        console.log('No connection detected for user:', userId);
         await this.bot.answerCallbackQuery(from.id, {
           text: '❌ No wallet connection detected. Please try connecting again.',
           show_alert: true
@@ -640,14 +679,58 @@ Stay active and earn NFT rewards! 🎁
     }
   }
 
+  async handleSimulateConnection(userId, from, message) {
+    try {
+      console.log('Simulating wallet connection for user:', userId);
+      
+      // Create a mock wallet connection for testing
+      const mockWallet = {
+        address: `EQTestWallet${userId}${Date.now().toString().slice(-6)}`,
+        chain: '-239',
+        publicKey: 'mock_public_key_' + userId
+      };
+
+      // Save to TON Connect service
+      await this.tonConnect.connectedWallets.set(userId, mockWallet);
+      
+      // Save to database
+      await this.database.saveUserWallet(userId, mockWallet);
+      
+      await this.bot.editMessageText(
+        `✅ Wallet Connected Successfully! (Simulated)\n\n` +
+        `Address: ${mockWallet.address}\n\n` +
+        `🧪 This is a test connection for development.\n` +
+        `You're now eligible for NFT rewards!`,
+        {
+          chat_id: message.chat.id,
+          message_id: message.message_id,
+          parse_mode: 'Markdown'
+        }
+      );
+      
+      console.log(`Simulated wallet connection for user ${userId}:`, mockWallet);
+    } catch (error) {
+      console.error('Simulate connection error:', error);
+      await this.bot.answerCallbackQuery(from.id, {
+        text: 'Error simulating connection.',
+        show_alert: true
+      });
+    }
+  }
+
   async waitForWalletConnection(userId, chatId, messageId) {
     try {
+      console.log('Starting to wait for wallet connection...', { userId, chatId, messageId });
+      
       // Wait up to 2 minutes for wallet connection
       const wallet = await this.tonConnect.waitForConnection(userId, 120000);
+      console.log('Wallet connection result:', wallet);
       
       if (wallet) {
+        console.log('Wallet connected successfully, saving to database...');
         // Save wallet to database
         await this.database.saveUserWallet(userId, wallet);
+        console.log('Wallet saved to database successfully');
         
         // Update the message
         await this.bot.editMessageText(
@@ -656,9 +739,13 @@ Stay active and earn NFT rewards! 🎁
           `You're now eligible for NFT rewards! 🎉`,
           {
             chat_id: chatId,
-            message_id: messageId
+            message_id: messageId,
+            parse_mode: 'Markdown'
           }
         );
+        console.log('Success message updated');
+      } else {
+        console.log('No wallet connection received within timeout');
       }
     } catch (error) {
       console.error('Wallet connection timeout:', error);
@@ -673,9 +760,11 @@ Stay active and earn NFT rewards! 🎁
           `• Wait for confirmation`,
           {
             chat_id: chatId,
-            message_id: messageId
+            message_id: messageId,
+            parse_mode: 'Markdown'
           }
         );
+        console.log('Timeout message updated');
       } catch (editError) {
         console.error('Error updating timeout message:', editError);
       }

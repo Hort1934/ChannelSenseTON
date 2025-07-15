@@ -1,7 +1,7 @@
 {
-  "url": "http://localhost:3001",
+  "url": "https://8163cdba6950.ngrok-free.app",
   "name": "ChannelSense TON",
-  "iconUrl": "http://localhost:3001/icon-192x192.png",
-  "termsOfUseUrl": "http://localhost:3001/terms",
-  "privacyPolicyUrl": "http://localhost:3001/privacy"
+  "iconUrl": "https://8163cdba6950.ngrok-free.app/icon-192x192.png",
+  "termsOfUseUrl": "https://8163cdba6950.ngrok-free.app/terms.html",
+  "privacyPolicyUrl": "https://8163cdba6950.ngrok-free.app/privacy.html"
 }

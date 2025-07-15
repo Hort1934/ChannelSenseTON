@@ -25,9 +25,9 @@ export class WebServer {
       const manifest = {
         url: `${req.protocol}://${req.get('host')}`,
         name: 'ChannelSense TON',
-        iconUrl: `${req.protocol}://${req.get('host')}/icon.png`,
-        termsOfUseUrl: `${req.protocol}://${req.get('host')}/terms`,
-        privacyPolicyUrl: `${req.protocol}://${req.get('host')}/privacy`
+        iconUrl: `${req.protocol}://${req.get('host')}/icon-192x192.svg`,
+        termsOfUseUrl: `${req.protocol}://${req.get('host')}/terms.html`,
+        privacyPolicyUrl: `${req.protocol}://${req.get('host')}/privacy.html`
       };
       
       res.json(manifest);

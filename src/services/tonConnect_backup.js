@@ -32,8 +32,8 @@ if (typeof global !== 'undefined' && !global.localStorage) {
 export class TONConnectService {
   constructor() {
     // Ensure we have a valid manifest URL
-    // Using ngrok tunnel for testing since localhost is not accessible externally
-    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL || 'https://8163cdba6950.ngrok-free.app/tonconnect-manifest.json';
+    // Using public GitHub Pages for testing since localhost is not accessible externally
+    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL || 'https://raw.githubusercontent.com/Hort1934/ChannelSenseTON/main/public/tonconnect-manifest.json';
     
     // Validate manifest URL format
     if (!manifestUrl.startsWith('http://') && !manifestUrl.startsWith('https://')) {
