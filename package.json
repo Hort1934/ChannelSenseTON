@@ -1,0 +1,42 @@
+{
+  "name": "channelsense-ton",
+  "version": "1.0.0",
+  "description": "MCP Server for Telegram Channel Analytics with TON Connect Integration",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests yet'"
+  },
+  "keywords": [
+    "mcp",
+    "telegram",
+    "ton",
+    "analytics",
+    "ai",
+    "bot"
+  ],
+  "author": "ChannelSense Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "@tonconnect/sdk": "^3.0.5",
+    "@ton/ton": "^15.0.0",
+    "@ton/core": "^0.60.0",
+    "@ton/crypto": "^3.3.0",
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "openai": "^4.58.1",
+    "sqlite3": "^5.1.6",
+    "axios": "^1.7.7",
+    "qrcode": "^1.5.3",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

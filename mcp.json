@@ -1,0 +1,16 @@
+{
+  "name": "channelsense-ton",
+  "description": "MCP Server for Telegram Channel Analytics with TON Connect Integration",
+  "version": "1.0.0",
+  "mcpServers": {
+    "channelsense-ton": {
+      "command": "node",
+      "args": ["src/index.js"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "7057285528:AAGFhVDa9bfkClHrcM2HUwA5muVx0tuoob4",
+        "OPENAI_API_KEY": "jVKCgTqyVss4aEpkwgyzi79Uj15kSlaf",
+        "TON_CONNECT_MANIFEST_URL": "https://your-domain.com/tonconnect-manifest.json"
+      }
+    }
+  }
+}
