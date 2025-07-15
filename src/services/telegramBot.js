@@ -51,6 +51,9 @@ export class TelegramBot {
     console.log('Initializing Telegram Bot...');
     
     try {
+      // Set bot profile
+      await this.setupBotProfile();
+      
       // Set bot commands
       await this.bot.setMyCommands([
         { command: 'start', description: 'Start the bot' },
@@ -70,6 +73,30 @@ export class TelegramBot {
     } catch (error) {
       console.error('Error initializing Telegram Bot:', error);
       throw error;
+    }
+  }
+
+  async setupBotProfile() {
+    try {
+      // Set bot description
+      await this.bot.setMyDescription(
+        '🤖 ChannelSense TON - AI-powered channel analytics with NFT rewards\n\n' +
+        '📊 Analyze channel activity and sentiment\n' +
+        '💎 Connect your TON wallet for NFT rewards\n' +
+        '🏆 Track top contributors and earn rewards\n' +
+        '🔬 Advanced AI insights for your community\n\n' +
+        'Use /start to begin and /guide for complete instructions!'
+      );
+
+      // Set bot short description
+      await this.bot.setMyShortDescription(
+        '🤖 AI channel analytics + TON NFT rewards. Analyze activity, connect wallet, earn NFTs!'
+      );
+
+      console.log('Bot profile updated successfully');
+    } catch (error) {
+      console.error('Error setting bot profile:', error);
+      // Don't throw - profile setup is not critical
     }
   }
 
@@ -277,20 +304,56 @@ ${analysis.aiInsights}
       try {
         const topUsers = await this.analytics.getTopUsers(chatId, 'week', limit);
         
+        // Check wallet connection for each user
+        const usersWithWalletStatus = await Promise.all(
+          topUsers.map(async (user) => {
+            try {
+              // Check TON Connect service first
+              const connectionStatus = await this.tonConnect.checkConnectionStatus(user.userId);
+              const hasWallet = connectionStatus.connected;
+              const walletAddress = connectionStatus.wallet?.address;
+              
+              // If not found in TON Connect, check database as fallback
+              if (!hasWallet) {
+                const dbWallet = await this.database.getUserWallet(user.userId);
+                return {
+                  ...user,
+                  hasWallet: !!dbWallet,
+                  walletAddress: dbWallet?.address
+                };
+              }
+              
+              return {
+                ...user,
+                hasWallet,
+                walletAddress
+              };
+            } catch (error) {
+              console.error(`Error checking wallet for user ${user.userId}:`, error);
+              return {
+                ...user,
+                hasWallet: false,
+                walletAddress: null
+              };
+            }
+          })
+        );
+        
         const topUsersMessage = `
 👥 **Top ${limit} Users This Week**
 
-${topUsers.map((user, index) => 
+${usersWithWalletStatus.map((user, index) => 
   `${this.getRankEmoji(index + 1)} **${user.username || user.firstName || 'Unknown'}**\n` +
   `   Messages: ${user.messageCount}\n` +
-  `   Score: ${user.engagementScore}\n` +
-  `   Wallet: ${user.tonWallet ? '✅' : '❌'}`
+  `   Score: ${user.engagementScore || 'N/A'}\n` +
+  `   Wallet: ${user.hasWallet ? '✅' : '❌'}` +
+  (user.hasWallet ? `\n   Address: \`${user.walletAddress.slice(0, 10)}...\`` : '')
 ).join('\n\n')}
 
 💡 Connect your wallet with /connect to be eligible for NFT rewards!
         `;
 
-        await this.bot.sendMessage(chatId, topUsersMessage);
+        await this.bot.sendMessage(chatId, topUsersMessage, { parse_mode: 'Markdown' });
 
       } catch (error) {
         console.error('Top users error:', error);
@@ -343,9 +406,10 @@ ${sentiment.summary}
       const userId = msg.from.id;
 
       try {
-        const userRewards = await this.database.getUserRewards(userId);
+        // Check if wallet is connected first
+        const walletInfo = await this.tonConnect.getWalletInfo(userId);
         
-        if (userRewards.length === 0) {
+        if (!walletInfo) {
           await this.bot.sendMessage(chatId, 
             `🎁 **No NFT Rewards Yet**\n\n` +
             `Stay active in channels and connect your wallet to earn NFT rewards!\n\n` +
@@ -354,8 +418,23 @@ ${sentiment.summary}
           return;
         }
 
+        // Wallet is connected, check for rewards
+        const userRewards = await this.database.getUserRewards(userId);
+        
+        if (userRewards.length === 0) {
+          await this.bot.sendMessage(chatId, 
+            `🎁 **No NFT Rewards Yet**\n\n` +
+            `💰 **Wallet Connected**: \`${walletInfo.address}\`\n\n` +
+            `Stay active in channels to earn NFT rewards! Your wallet is ready to receive them.`,
+            { parse_mode: 'Markdown' }
+          );
+          return;
+        }
+
         const rewardsMessage = `
 🎁 **Your NFT Rewards**
+
+💰 **Wallet**: \`${walletInfo.address}\`
 
 ${userRewards.map((reward, index) => 
   `${index + 1}. **${reward.nftName}**\n` +
@@ -367,7 +446,7 @@ ${userRewards.map((reward, index) =>
 💎 Total NFTs: ${userRewards.length}
         `;
 
-        await this.bot.sendMessage(chatId, rewardsMessage);
+        await this.bot.sendMessage(chatId, rewardsMessage, { parse_mode: 'Markdown' });
 
       } catch (error) {
         console.error('Rewards error:', error);

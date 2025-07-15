@@ -1,0 +1,37 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0088ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0064cc;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e6f3ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#ffffff" stroke-width="8"/>
+  
+  <!-- Central icon - analytics chart -->
+  <rect x="180" y="200" width="20" height="80" fill="url(#textGradient)" rx="4"/>
+  <rect x="210" y="170" width="20" height="110" fill="url(#textGradient)" rx="4"/>
+  <rect x="240" y="150" width="20" height="130" fill="url(#textGradient)" rx="4"/>
+  <rect x="270" y="180" width="20" height="100" fill="url(#textGradient)" rx="4"/>
+  <rect x="300" y="140" width="20" height="140" fill="url(#textGradient)" rx="4"/>
+  
+  <!-- Channel/Group icon -->
+  <circle cx="200" cy="320" r="25" fill="url(#textGradient)" opacity="0.8"/>
+  <circle cx="256" cy="320" r="25" fill="url(#textGradient)" opacity="0.8"/>
+  <circle cx="312" cy="320" r="25" fill="url(#textGradient)" opacity="0.8"/>
+  
+  <!-- TON blockchain symbol -->
+  <circle cx="380" cy="160" r="30" fill="none" stroke="url(#textGradient)" stroke-width="6"/>
+  <text x="380" y="170" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="url(#textGradient)" text-anchor="middle">💎</text>
+  
+  <!-- Bot text -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="url(#textGradient)" text-anchor="middle">ChannelSense</text>
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="18" fill="url(#textGradient)" text-anchor="middle" opacity="0.9">TON</text>
+</svg>
