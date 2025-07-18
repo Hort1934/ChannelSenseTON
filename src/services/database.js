@@ -277,10 +277,10 @@ export class DatabaseService {
     try {
       const users = await this.all(`
         SELECT 
-          m.user_id,
+          m.user_id as userId,
           u.username,
-          u.first_name,
-          u.last_name,
+          u.first_name as firstName,
+          u.last_name as lastName,
           COUNT(*) as messageCount
         FROM messages m
         JOIN users u ON m.user_id = u.user_id

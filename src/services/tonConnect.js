@@ -30,10 +30,17 @@ if (typeof global !== 'undefined' && !global.localStorage) {
 }
 
 export class TONConnectService {
-  constructor() {
+  constructor(database = null) {
+    this.database = database;
+    
     // Ensure we have a valid manifest URL
-    // Using ngrok tunnel for testing since localhost is not accessible externally
-    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL || 'https://8163cdba6950.ngrok-free.app/tonconnect-manifest.json';
+    // Use environment variable first, no fallback to localhost
+    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL;
+    
+    if (!manifestUrl) {
+      console.error('TON_CONNECT_MANIFEST_URL environment variable is required');
+      throw new Error('TON_CONNECT_MANIFEST_URL environment variable must be set');
+    }
     
     // Validate manifest URL format
     if (!manifestUrl.startsWith('http://') && !manifestUrl.startsWith('https://')) {
@@ -88,6 +95,19 @@ export class TONConnectService {
   async generateConnectLink(userId) {
     try {
       console.log(`Generating connect link for user ${userId}`);
+      
+      // First check if this user already has a connected wallet
+      const existingConnection = await this.checkConnectionStatus(userId);
+      if (existingConnection.connected) {
+        console.log(`User ${userId} already has a connected wallet`);
+        return {
+          connectUrl: null,
+          sessionId: null,
+          alreadyConnected: true,
+          wallet: existingConnection.wallet
+        };
+      }
+      
       const sessionId = uuidv4();
       
       // Store pending connection with more details
@@ -97,16 +117,19 @@ export class TONConnectService {
         status: 'pending'
       });
 
-      // Check if already connected first
+      // Check if TON Connect is globally connected (might need to disconnect first)
       const isConnected = this.tonConnect.connected;
       console.log('TON Connect current state:', { isConnected, wallets: this.tonConnect.wallet });
 
-      // Restore connection if wallet was previously connected
-      try {
-        await this.tonConnect.restoreConnection();
-        console.log('Attempted to restore connection');
-      } catch (restoreError) {
-        console.log('No previous connection to restore:', restoreError.message);
+      // If globally connected, disconnect first to allow new connection
+      if (isConnected) {
+        console.log('TON Connect is globally connected, disconnecting first...');
+        try {
+          await this.tonConnect.disconnect();
+          console.log('Successfully disconnected previous connection');
+        } catch (disconnectError) {
+          console.log('Error disconnecting:', disconnectError.message);
+        }
       }
 
       // Generate connection URL using TON Connect format
@@ -144,14 +167,19 @@ export class TONConnectService {
 
   async checkConnectionStatus(userId) {
     try {
+      // Check if userId is valid
+      if (!userId || userId === undefined || userId === null) {
+        console.error('checkConnectionStatus: Invalid userId provided:', userId);
+        return {
+          connected: false,
+          pending: false,
+          error: 'Invalid user ID'
+        };
+      }
+
       console.log(`Checking connection status for user ${userId}`);
-      console.log('Current TON Connect state:', {
-        connected: this.tonConnect.connected,
-        wallet: this.tonConnect.wallet,
-        account: this.tonConnect.account
-      });
       
-      // Check if wallet is already connected
+      // First check if we have this user's wallet in our cache
       if (this.connectedWallets.has(userId)) {
         console.log(`User ${userId} has connected wallet in cache`);
         return {
@@ -160,23 +188,28 @@ export class TONConnectService {
         };
       }
 
-      // Check actual TON Connect status
-      if (this.tonConnect.connected && this.tonConnect.account) {
-        console.log(`User ${userId} wallet connected via TON Connect:`, this.tonConnect.account);
-        
-        const walletInfo = {
-          address: this.tonConnect.account.address,
-          chain: this.tonConnect.account.chain,
-          publicKey: this.tonConnect.account.publicKey
-        };
-        
-        // Cache the connection
-        this.connectedWallets.set(userId, walletInfo);
-        
-        return {
-          connected: true,
-          wallet: walletInfo
-        };
+      // Check database for wallet info (this is the most reliable source)
+      try {
+        const dbWallet = await this.database?.getUserWallet(userId);
+        if (dbWallet) {
+          console.log(`User ${userId} has wallet in database:`, dbWallet.address);
+          // Cache it for future use
+          this.connectedWallets.set(userId, {
+            address: dbWallet.address,
+            chain: dbWallet.chain,
+            publicKey: dbWallet.public_key
+          });
+          return {
+            connected: true,
+            wallet: {
+              address: dbWallet.address,
+              chain: dbWallet.chain,
+              publicKey: dbWallet.public_key
+            }
+          };
+        }
+      } catch (dbError) {
+        console.error('Error checking database for wallet:', dbError);
       }
 
       // Check pending connections

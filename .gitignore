@@ -149,3 +149,18 @@ vite.config.ts.timestamp-*
 data/
 *.sqlite
 *.db
+
+# API Keys and secrets
+*.key
+*.pem
+*.p12
+secrets.json
+
+# Bot lock file
+.bot-lock
+
+# TON Connect temporary files
+tonconnect-*
+
+# MCP Server development files
+mcp-server.log

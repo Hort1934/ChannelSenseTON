@@ -51,6 +51,9 @@ export class TelegramBot {
     console.log('Initializing Telegram Bot...');
     
     try {
+      // Set bot profile
+      await this.setupBotProfile();
+      
       // Set bot commands
       await this.bot.setMyCommands([
         { command: 'start', description: 'Start the bot' },
@@ -70,6 +73,30 @@ export class TelegramBot {
     } catch (error) {
       console.error('Error initializing Telegram Bot:', error);
       throw error;
+    }
+  }
+
+  async setupBotProfile() {
+    try {
+      // Set bot description
+      await this.bot.setMyDescription(
+        '🤖 ChannelSense TON - AI-powered channel analytics with NFT rewards\n\n' +
+        '📊 Analyze channel activity and sentiment\n' +
+        '💎 Connect your TON wallet for NFT rewards\n' +
+        '🏆 Track top contributors and earn rewards\n' +
+        '🔬 Advanced AI insights for your community\n\n' +
+        'Use /start to begin and /guide for complete instructions!'
+      );
+
+      // Set bot short description
+      await this.bot.setMyShortDescription(
+        '🤖 AI channel analytics + TON NFT rewards. Analyze activity, connect wallet, earn NFTs!'
+      );
+
+      console.log('Bot profile updated successfully');
+    } catch (error) {
+      console.error('Error setting bot profile:', error);
+      // Don't throw - profile setup is not critical
     }
   }
 
@@ -145,7 +172,15 @@ Start with /analyze command to see current statistics! 📈
         `;
       }
 
-      await this.bot.sendMessage(chatId, welcomeMessage);
+      try {
+        await this.bot.sendMessage(chatId, welcomeMessage);
+      } catch (error) {
+        console.error('Error sending welcome message:', error.message);
+        // Don't throw error, just log it - continue bot operation
+        if (error.message.includes('PEER_ID_INVALID')) {
+          console.log(`Bot doesn't have access to chat ${chatId} anymore`);
+        }
+      }
     });
 
     // Connect wallet command
@@ -175,7 +210,18 @@ Start with /analyze command to see current statistics! 📈
         }
 
         console.log('Generating connect link for user:', userId);
-        const { connectUrl } = await this.tonConnect.generateConnectLink(userId);
+        const result = await this.tonConnect.generateConnectLink(userId);
+        
+        // Handle case where wallet is already connected
+        if (result.alreadyConnected) {
+          await this.bot.sendMessage(chatId, 
+            `✅ *Wallet Already Connected!*\n\nAddress: ${result.wallet.address}\n\nYou're ready to receive NFT rewards!`,
+            { parse_mode: 'Markdown' }
+          );
+          return;
+        }
+        
+        const { connectUrl } = result;
         console.log('Generated connect URL:', connectUrl);
         
         const keyboard = {
@@ -277,20 +323,45 @@ ${analysis.aiInsights}
       try {
         const topUsers = await this.analytics.getTopUsers(chatId, 'week', limit);
         
+        // Check wallet connection for each user from database
+        const usersWithWalletStatus = await Promise.all(
+          topUsers.map(async (user) => {
+            try {
+              // Check database for wallet info
+              const walletInfo = await this.database.getUserWallet(user.userId);
+              const hasWallet = !!walletInfo;
+              
+              return {
+                ...user,
+                hasWallet,
+                walletAddress: walletInfo?.address
+              };
+            } catch (error) {
+              console.error(`Error checking wallet for user ${user.userId}:`, error);
+              return {
+                ...user,
+                hasWallet: false,
+                walletAddress: null
+              };
+            }
+          })
+        );
+        
         const topUsersMessage = `
-👥 **Top ${limit} Users This Week**
+👥 *Top ${limit} Users This Week*
 
-${topUsers.map((user, index) => 
-  `${this.getRankEmoji(index + 1)} **${user.username || user.firstName || 'Unknown'}**\n` +
+${usersWithWalletStatus.map((user, index) => 
+  `${this.getRankEmoji(index + 1)} *${(user.username || user.firstName || 'Unknown').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}*\n` +
   `   Messages: ${user.messageCount}\n` +
-  `   Score: ${user.engagementScore}\n` +
-  `   Wallet: ${user.tonWallet ? '✅' : '❌'}`
+  `   Score: ${user.engagementScore || 'N/A'}\n` +
+  `   Wallet: ${user.hasWallet ? '✅' : '❌'}` +
+  (user.hasWallet && user.walletAddress ? `\n   Address: \`${user.walletAddress.slice(0, 10)}...\`` : '')
 ).join('\n\n')}
 
 💡 Connect your wallet with /connect to be eligible for NFT rewards!
         `;
 
-        await this.bot.sendMessage(chatId, topUsersMessage);
+        await this.bot.sendMessage(chatId, topUsersMessage, { parse_mode: 'Markdown' });
 
       } catch (error) {
         console.error('Top users error:', error);
@@ -343,9 +414,10 @@ ${sentiment.summary}
       const userId = msg.from.id;
 
       try {
-        const userRewards = await this.database.getUserRewards(userId);
+        // Check if wallet is connected first
+        const walletInfo = await this.tonConnect.getWalletInfo(userId);
         
-        if (userRewards.length === 0) {
+        if (!walletInfo) {
           await this.bot.sendMessage(chatId, 
             `🎁 **No NFT Rewards Yet**\n\n` +
             `Stay active in channels and connect your wallet to earn NFT rewards!\n\n` +
@@ -354,8 +426,23 @@ ${sentiment.summary}
           return;
         }
 
+        // Wallet is connected, check for rewards
+        const userRewards = await this.database.getUserRewards(userId);
+        
+        if (userRewards.length === 0) {
+          await this.bot.sendMessage(chatId, 
+            `🎁 **No NFT Rewards Yet**\n\n` +
+            `💰 **Wallet Connected**: \`${walletInfo.address}\`\n\n` +
+            `Stay active in channels to earn NFT rewards! Your wallet is ready to receive them.`,
+            { parse_mode: 'Markdown' }
+          );
+          return;
+        }
+
         const rewardsMessage = `
 🎁 **Your NFT Rewards**
+
+💰 **Wallet**: \`${walletInfo.address}\`
 
 ${userRewards.map((reward, index) => 
   `${index + 1}. **${reward.nftName}**\n` +
@@ -367,7 +454,7 @@ ${userRewards.map((reward, index) =>
 💎 Total NFTs: ${userRewards.length}
         `;
 
-        await this.bot.sendMessage(chatId, rewardsMessage);
+        await this.bot.sendMessage(chatId, rewardsMessage, { parse_mode: 'Markdown' });
 
       } catch (error) {
         console.error('Rewards error:', error);
@@ -408,8 +495,8 @@ Need help? Contact support: @channelsense_support`;
       await this.bot.sendMessage(chatId, helpMessage);
     });
 
-    // Guide command for groups and channels
-    this.bot.onText(/\/guide/, async (msg) => {
+    // Guide command for groups and channels (temporarily disabled)
+    /*this.bot.onText(/\/guide/, async (msg) => {
       const chatId = msg.chat.id;
       const chatType = msg.chat.type;
       
@@ -498,7 +585,7 @@ Every Sunday I publish a complete activity analysis and reward top-3 participant
       }
       
       await this.bot.sendMessage(chatId, guideMessage, { parse_mode: 'Markdown' });
-    });
+    });*/
   }
 
   setupMessageHandlers() {
@@ -777,6 +864,10 @@ Stay active and earn NFT rewards! 🎁
   }
 
   getSentimentEmoji(sentiment) {
+    if (!sentiment || typeof sentiment !== 'string') {
+      return '😐';
+    }
+    
     switch (sentiment.toLowerCase()) {
       case 'positive': return '😊';
       case 'negative': return '😔';
@@ -790,8 +881,18 @@ Stay active and earn NFT rewards! 🎁
     try {
       return await this.bot.sendMessage(chatId, message, options);
     } catch (error) {
-      console.error('Send message error:', error);
-      throw error;
+      console.error('Send message error:', error.message);
+      
+      // Handle specific Telegram errors
+      if (error.message.includes('PEER_ID_INVALID')) {
+        console.log(`Bot doesn't have access to chat ${chatId} anymore`);
+        return null; // Don't throw, just return null
+      } else if (error.message.includes('403 Forbidden')) {
+        console.log(`Bot was blocked or kicked from chat ${chatId}`);
+        return null;
+      }
+      
+      throw error; // Re-throw other errors
     }
   }
 
