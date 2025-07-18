@@ -160,13 +160,8 @@ export class TONConnectService {
       }
 
       console.log(`Checking connection status for user ${userId}`);
-      console.log('Current TON Connect state:', {
-        connected: this.tonConnect.connected,
-        wallet: this.tonConnect.wallet,
-        account: this.tonConnect.account
-      });
       
-      // Check if wallet is already connected
+      // First check if we have this user's wallet in our cache
       if (this.connectedWallets.has(userId)) {
         console.log(`User ${userId} has connected wallet in cache`);
         return {
@@ -175,9 +170,9 @@ export class TONConnectService {
         };
       }
 
-      // Check actual TON Connect status
+      // Check if there's a global TON Connect connection and if it belongs to this user
       if (this.tonConnect.connected && this.tonConnect.account) {
-        console.log(`User ${userId} wallet connected via TON Connect:`, this.tonConnect.account);
+        console.log(`TON Connect is connected, checking if it belongs to user ${userId}`);
         
         const walletInfo = {
           address: this.tonConnect.account.address,
@@ -185,11 +180,14 @@ export class TONConnectService {
           publicKey: this.tonConnect.account.publicKey
         };
         
-        // Cache the connection
-        this.connectedWallets.set(userId, walletInfo);
+        // For now, we'll need to check the database to see if this wallet belongs to this user
+        // This is a workaround since TON Connect SDK doesn't maintain user sessions properly
+        console.log(`Need to verify wallet ownership for user ${userId}`);
         
         return {
-          connected: true,
+          connected: false,
+          pending: false,
+          needsVerification: true,
           wallet: walletInfo
         };
       }

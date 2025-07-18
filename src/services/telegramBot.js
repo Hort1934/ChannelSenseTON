@@ -312,29 +312,18 @@ ${analysis.aiInsights}
       try {
         const topUsers = await this.analytics.getTopUsers(chatId, 'week', limit);
         
-        // Check wallet connection for each user
+        // Check wallet connection for each user from database
         const usersWithWalletStatus = await Promise.all(
           topUsers.map(async (user) => {
             try {
-              // Check TON Connect service first
-              const connectionStatus = await this.tonConnect.checkConnectionStatus(user.userId);
-              const hasWallet = connectionStatus.connected;
-              const walletAddress = connectionStatus.wallet?.address;
-              
-              // If not found in TON Connect, check database as fallback
-              if (!hasWallet) {
-                const dbWallet = await this.database.getUserWallet(user.userId);
-                return {
-                  ...user,
-                  hasWallet: !!dbWallet,
-                  walletAddress: dbWallet?.address
-                };
-              }
+              // Check database for wallet info
+              const walletInfo = await this.database.getUserWallet(user.userId);
+              const hasWallet = !!walletInfo;
               
               return {
                 ...user,
                 hasWallet,
-                walletAddress
+                walletAddress: walletInfo?.address
               };
             } catch (error) {
               console.error(`Error checking wallet for user ${user.userId}:`, error);
