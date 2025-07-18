@@ -401,6 +401,13 @@ The system uses standard TON smart contracts:
 
 ## 🔒 Security
 
+### Environment Variables & API Keys
+- **Never commit real API keys** to version control
+- **Use .env file** for local development (ignored by git)
+- **Use .env.example** as template with placeholder values
+- **Set production variables** in your deployment platform
+- **Rotate keys regularly** and monitor for exposure
+
 ### Data Protection
 - **Encryption**: All sensitive data encrypted at rest
 - **Privacy**: GDPR-compliant data handling
@@ -412,6 +419,13 @@ The system uses standard TON smart contracts:
 - **Secure Connection**: TON Connect standard compliance
 - **Transaction Verification**: Multi-step confirmation
 - **Rate Limiting**: Protection against abuse
+
+### Security Checklist
+- [ ] All API keys stored in environment variables
+- [ ] .env file added to .gitignore
+- [ ] Production secrets configured in deployment platform
+- [ ] No hardcoded credentials in source code
+- [ ] Regular security audits performed
 
 ## 🌐 Deployment
 
