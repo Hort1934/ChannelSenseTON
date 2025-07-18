@@ -172,7 +172,15 @@ Start with /analyze command to see current statistics! 📈
         `;
       }
 
-      await this.bot.sendMessage(chatId, welcomeMessage);
+      try {
+        await this.bot.sendMessage(chatId, welcomeMessage);
+      } catch (error) {
+        console.error('Error sending welcome message:', error.message);
+        // Don't throw error, just log it - continue bot operation
+        if (error.message.includes('PEER_ID_INVALID')) {
+          console.log(`Bot doesn't have access to chat ${chatId} anymore`);
+        }
+      }
     });
 
     // Connect wallet command
@@ -487,8 +495,8 @@ Need help? Contact support: @channelsense_support`;
       await this.bot.sendMessage(chatId, helpMessage);
     });
 
-    // Guide command for groups and channels
-    this.bot.onText(/\/guide/, async (msg) => {
+    // Guide command for groups and channels (temporarily disabled)
+    /*this.bot.onText(/\/guide/, async (msg) => {
       const chatId = msg.chat.id;
       const chatType = msg.chat.type;
       
@@ -577,7 +585,7 @@ Every Sunday I publish a complete activity analysis and reward top-3 participant
       }
       
       await this.bot.sendMessage(chatId, guideMessage, { parse_mode: 'Markdown' });
-    });
+    });*/
   }
 
   setupMessageHandlers() {
@@ -869,8 +877,18 @@ Stay active and earn NFT rewards! 🎁
     try {
       return await this.bot.sendMessage(chatId, message, options);
     } catch (error) {
-      console.error('Send message error:', error);
-      throw error;
+      console.error('Send message error:', error.message);
+      
+      // Handle specific Telegram errors
+      if (error.message.includes('PEER_ID_INVALID')) {
+        console.log(`Bot doesn't have access to chat ${chatId} anymore`);
+        return null; // Don't throw, just return null
+      } else if (error.message.includes('403 Forbidden')) {
+        console.log(`Bot was blocked or kicked from chat ${chatId}`);
+        return null;
+      }
+      
+      throw error; // Re-throw other errors
     }
   }
 
