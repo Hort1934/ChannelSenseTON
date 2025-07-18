@@ -81,7 +81,7 @@ class ChannelSenseTONServer {
       this.aiService = new AIService();
 
       // Initialize TON Connect service
-      this.tonConnect = new TONConnectService();
+      this.tonConnect = new TONConnectService(this.database);
 
       // Initialize analytics service
       this.analytics = new AnalyticsService(this.database, this.aiService);

@@ -210,7 +210,18 @@ Start with /analyze command to see current statistics! 📈
         }
 
         console.log('Generating connect link for user:', userId);
-        const { connectUrl } = await this.tonConnect.generateConnectLink(userId);
+        const result = await this.tonConnect.generateConnectLink(userId);
+        
+        // Handle case where wallet is already connected
+        if (result.alreadyConnected) {
+          await this.bot.sendMessage(chatId, 
+            `✅ *Wallet Already Connected!*\n\nAddress: ${result.wallet.address}\n\nYou're ready to receive NFT rewards!`,
+            { parse_mode: 'Markdown' }
+          );
+          return;
+        }
+        
+        const { connectUrl } = result;
         console.log('Generated connect URL:', connectUrl);
         
         const keyboard = {

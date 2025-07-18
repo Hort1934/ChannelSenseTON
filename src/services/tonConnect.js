@@ -30,7 +30,9 @@ if (typeof global !== 'undefined' && !global.localStorage) {
 }
 
 export class TONConnectService {
-  constructor() {
+  constructor(database = null) {
+    this.database = database;
+    
     // Ensure we have a valid manifest URL
     // Use environment variable first, no fallback to localhost
     const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL;
@@ -93,6 +95,19 @@ export class TONConnectService {
   async generateConnectLink(userId) {
     try {
       console.log(`Generating connect link for user ${userId}`);
+      
+      // First check if this user already has a connected wallet
+      const existingConnection = await this.checkConnectionStatus(userId);
+      if (existingConnection.connected) {
+        console.log(`User ${userId} already has a connected wallet`);
+        return {
+          connectUrl: null,
+          sessionId: null,
+          alreadyConnected: true,
+          wallet: existingConnection.wallet
+        };
+      }
+      
       const sessionId = uuidv4();
       
       // Store pending connection with more details
@@ -102,16 +117,19 @@ export class TONConnectService {
         status: 'pending'
       });
 
-      // Check if already connected first
+      // Check if TON Connect is globally connected (might need to disconnect first)
       const isConnected = this.tonConnect.connected;
       console.log('TON Connect current state:', { isConnected, wallets: this.tonConnect.wallet });
 
-      // Restore connection if wallet was previously connected
-      try {
-        await this.tonConnect.restoreConnection();
-        console.log('Attempted to restore connection');
-      } catch (restoreError) {
-        console.log('No previous connection to restore:', restoreError.message);
+      // If globally connected, disconnect first to allow new connection
+      if (isConnected) {
+        console.log('TON Connect is globally connected, disconnecting first...');
+        try {
+          await this.tonConnect.disconnect();
+          console.log('Successfully disconnected previous connection');
+        } catch (disconnectError) {
+          console.log('Error disconnecting:', disconnectError.message);
+        }
       }
 
       // Generate connection URL using TON Connect format
@@ -170,26 +188,28 @@ export class TONConnectService {
         };
       }
 
-      // Check if there's a global TON Connect connection and if it belongs to this user
-      if (this.tonConnect.connected && this.tonConnect.account) {
-        console.log(`TON Connect is connected, checking if it belongs to user ${userId}`);
-        
-        const walletInfo = {
-          address: this.tonConnect.account.address,
-          chain: this.tonConnect.account.chain,
-          publicKey: this.tonConnect.account.publicKey
-        };
-        
-        // For now, we'll need to check the database to see if this wallet belongs to this user
-        // This is a workaround since TON Connect SDK doesn't maintain user sessions properly
-        console.log(`Need to verify wallet ownership for user ${userId}`);
-        
-        return {
-          connected: false,
-          pending: false,
-          needsVerification: true,
-          wallet: walletInfo
-        };
+      // Check database for wallet info (this is the most reliable source)
+      try {
+        const dbWallet = await this.database?.getUserWallet(userId);
+        if (dbWallet) {
+          console.log(`User ${userId} has wallet in database:`, dbWallet.address);
+          // Cache it for future use
+          this.connectedWallets.set(userId, {
+            address: dbWallet.address,
+            chain: dbWallet.chain,
+            publicKey: dbWallet.public_key
+          });
+          return {
+            connected: true,
+            wallet: {
+              address: dbWallet.address,
+              chain: dbWallet.chain,
+              publicKey: dbWallet.public_key
+            }
+          };
+        }
+      } catch (dbError) {
+        console.error('Error checking database for wallet:', dbError);
       }
 
       // Check pending connections
