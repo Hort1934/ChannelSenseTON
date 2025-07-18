@@ -140,7 +140,13 @@ ${messageTexts}
       });
 
       try {
-        const result = JSON.parse(response.choices[0].message.content.trim());
+        let content = response.choices[0].message.content.trim();
+        
+        // Remove markdown code blocks if present
+        content = content.replace(/```json\s*/, '').replace(/```\s*$/, '');
+        content = content.replace(/```\s*/, '');
+        
+        const result = JSON.parse(content);
         
         // Validate the result
         if (typeof result.positive === 'number' && 
@@ -151,6 +157,7 @@ ${messageTexts}
         }
       } catch (parseError) {
         console.error('Error parsing sentiment analysis result:', parseError);
+        console.error('Raw content:', response.choices[0].message.content);
       }
 
       // Fallback sentiment analysis

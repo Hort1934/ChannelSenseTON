@@ -32,8 +32,13 @@ if (typeof global !== 'undefined' && !global.localStorage) {
 export class TONConnectService {
   constructor() {
     // Ensure we have a valid manifest URL
-    // Using ngrok tunnel for testing since localhost is not accessible externally
-    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL || 'https://8163cdba6950.ngrok-free.app/tonconnect-manifest.json';
+    // Use environment variable first, no fallback to localhost
+    const manifestUrl = process.env.TON_CONNECT_MANIFEST_URL;
+    
+    if (!manifestUrl) {
+      console.error('TON_CONNECT_MANIFEST_URL environment variable is required');
+      throw new Error('TON_CONNECT_MANIFEST_URL environment variable must be set');
+    }
     
     // Validate manifest URL format
     if (!manifestUrl.startsWith('http://') && !manifestUrl.startsWith('https://')) {
@@ -144,6 +149,16 @@ export class TONConnectService {
 
   async checkConnectionStatus(userId) {
     try {
+      // Check if userId is valid
+      if (!userId || userId === undefined || userId === null) {
+        console.error('checkConnectionStatus: Invalid userId provided:', userId);
+        return {
+          connected: false,
+          pending: false,
+          error: 'Invalid user ID'
+        };
+      }
+
       console.log(`Checking connection status for user ${userId}`);
       console.log('Current TON Connect state:', {
         connected: this.tonConnect.connected,

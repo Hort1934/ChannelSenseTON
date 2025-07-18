@@ -348,14 +348,14 @@ ${analysis.aiInsights}
         );
         
         const topUsersMessage = `
-👥 **Top ${limit} Users This Week**
+👥 *Top ${limit} Users This Week*
 
 ${usersWithWalletStatus.map((user, index) => 
-  `${this.getRankEmoji(index + 1)} **${user.username || user.firstName || 'Unknown'}**\n` +
+  `${this.getRankEmoji(index + 1)} *${(user.username || user.firstName || 'Unknown').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}*\n` +
   `   Messages: ${user.messageCount}\n` +
   `   Score: ${user.engagementScore || 'N/A'}\n` +
   `   Wallet: ${user.hasWallet ? '✅' : '❌'}` +
-  (user.hasWallet ? `\n   Address: \`${user.walletAddress.slice(0, 10)}...\`` : '')
+  (user.hasWallet && user.walletAddress ? `\n   Address: \`${user.walletAddress.slice(0, 10)}...\`` : '')
 ).join('\n\n')}
 
 💡 Connect your wallet with /connect to be eligible for NFT rewards!
@@ -864,6 +864,10 @@ Stay active and earn NFT rewards! 🎁
   }
 
   getSentimentEmoji(sentiment) {
+    if (!sentiment || typeof sentiment !== 'string') {
+      return '😐';
+    }
+    
     switch (sentiment.toLowerCase()) {
       case 'positive': return '😊';
       case 'negative': return '😔';
