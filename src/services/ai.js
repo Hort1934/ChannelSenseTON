@@ -430,12 +430,14 @@ Respond with valid JSON only.
         return '❌ **No query provided** - please specify what you want to analyze.';
       }
 
-      // Prepare message context for AI analysis
+      // Prepare message context for AI analysis - include message_id for links
       const messageContext = messages.slice(0, 100).map(msg => ({
         user: msg.username || msg.first_name || `User${msg.user_id}`,
         text: msg.text || '',
         timestamp: new Date(msg.date).toLocaleDateString(),
-        userId: msg.user_id
+        userId: msg.user_id,
+        messageId: msg.message_id,
+        chatId: msg.chat_id
       })).filter(msg => msg.text.length > 0);
 
       if (messageContext.length === 0) {
@@ -463,8 +465,10 @@ RESPONSE FORMAT:
 - List relevant users with examples of their messages
 - Include specific quotes from messages when relevant
 - Provide counts/statistics if asked
-- Use emojis and markdown formatting
+- Use emojis and simple formatting (no complex markdown)
 - Keep response concise but informative
+- Format like: "User @username said: 'message text'"
+- DO NOT include message IDs or chat IDs in the response
 
 Please respond in the same language as the query.
       `;
@@ -487,12 +491,58 @@ Please respond in the same language as the query.
 
       const analysis = response.choices[0].message.content.trim();
       
+      // Process the analysis to add message links
+      const processedAnalysis = this.addMessageLinks(analysis, messageContext, chatId);
+      
       // Add some formatting and context
-      return `${analysis}\n\n📝 **Analyzed ${messageContext.length} messages** from recent channel activity.`;
+      return `${processedAnalysis}\n\n📝 **Analyzed ${messageContext.length} messages** from recent channel activity.`;
 
     } catch (error) {
       console.error('Error in custom analysis:', error);
       return `❌ **Analysis error** - ${error.message || 'Please try again later.'}`;
+    }
+  }
+
+  // Helper method to add clickable links to messages
+  addMessageLinks(analysis, messageContext, chatId) {
+    try {
+      // Create a map of message IDs for quick lookup
+      const messageMap = new Map();
+      messageContext.forEach(msg => {
+        if (msg.messageId) {
+          messageMap.set(msg.messageId.toString(), msg);
+        }
+      });
+
+      // Find message ID patterns in the analysis and replace with links
+      const messageIdPattern = /\(ID:\s*(\d+)\)/g;
+      
+      return analysis.replace(messageIdPattern, (match, messageId) => {
+        const msg = messageMap.get(messageId);
+        if (msg && msg.chatId && msg.messageId) {
+          // Create Telegram message link
+          // Format: https://t.me/c/{chat_id}/{message_id}
+          // For public groups/channels: https://t.me/{username}/{message_id}
+          // For private groups: https://t.me/c/{chat_id_without_minus}/{message_id}
+          
+          let chatIdForLink = chatId;
+          if (chatIdForLink.toString().startsWith('-100')) {
+            // Remove -100 prefix for supergroup links
+            chatIdForLink = chatIdForLink.toString().substring(4);
+          } else if (chatIdForLink.toString().startsWith('-')) {
+            // Remove - prefix for regular group links
+            chatIdForLink = chatIdForLink.toString().substring(1);
+          }
+          
+          const messageLink = `https://t.me/c/${chatIdForLink}/${messageId}`;
+          return `(${messageLink})`;
+        }
+        return match; // Return original if no message found
+      });
+
+    } catch (error) {
+      console.error('Error adding message links:', error);
+      return analysis; // Return original analysis if link processing fails
     }
   }
 }
