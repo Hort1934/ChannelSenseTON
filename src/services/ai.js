@@ -415,4 +415,84 @@ Respond with valid JSON only.
       };
     }
   }
+
+  async customAnalysis(messages, query, chatId) {
+    try {
+      if (!this.client) {
+        return '❌ **AI analysis unavailable** - API key not configured.';
+      }
+
+      if (!messages || messages.length === 0) {
+        return '❌ **No recent messages found** to analyze.';
+      }
+
+      if (!query || query.trim().length === 0) {
+        return '❌ **No query provided** - please specify what you want to analyze.';
+      }
+
+      // Prepare message context for AI analysis
+      const messageContext = messages.slice(0, 100).map(msg => ({
+        user: msg.username || msg.first_name || `User${msg.user_id}`,
+        text: msg.text || '',
+        timestamp: new Date(msg.date).toLocaleDateString(),
+        userId: msg.user_id
+      })).filter(msg => msg.text.length > 0);
+
+      if (messageContext.length === 0) {
+        return '❌ **No text messages found** for analysis.';
+      }
+
+      const prompt = `
+You are an expert Telegram channel analyst. Analyze the provided messages to answer the user's specific question.
+
+USER QUESTION: "${query}"
+
+CHANNEL MESSAGES (${messageContext.length} messages):
+${JSON.stringify(messageContext, null, 2)}
+
+ANALYSIS INSTRUCTIONS:
+1. Read through all messages carefully
+2. Find messages and users relevant to the query
+3. Provide specific examples with usernames and message content
+4. Count occurrences if asked for numbers
+5. Identify patterns and trends
+6. Present findings in a clear, structured format
+
+RESPONSE FORMAT:
+- Start with a direct answer to the question
+- List relevant users with examples of their messages
+- Include specific quotes from messages when relevant
+- Provide counts/statistics if asked
+- Use emojis and markdown formatting
+- Keep response concise but informative
+
+Please respond in the same language as the query.
+      `;
+
+      const response = await this.client.chat.completions.create({
+        model: this.getModel(),
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert Telegram channel analyst who provides detailed, accurate analysis based on message data. Always include specific examples and user information when available.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.3
+      });
+
+      const analysis = response.choices[0].message.content.trim();
+      
+      // Add some formatting and context
+      return `${analysis}\n\n📝 **Analyzed ${messageContext.length} messages** from recent channel activity.`;
+
+    } catch (error) {
+      console.error('Error in custom analysis:', error);
+      return `❌ **Analysis error** - ${error.message || 'Please try again later.'}`;
+    }
+  }
 }

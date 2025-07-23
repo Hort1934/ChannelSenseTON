@@ -105,6 +105,7 @@ ChannelSense TON is an intelligent Telegram bot that analyzes channel activity, 
 | `/analyze [period]` | Analyze channel activity | `/analyze week` |
 | `/top [number]` | Show top contributors | `/top 10` |
 | `/sentiment` | Analyze channel sentiment | `/sentiment` |
+| `/custom [query]` | Custom AI analysis with specific questions | `/custom Хто шукав навчання трейдингу?` |
 | `/rewards` | Check NFT rewards | `/rewards` |
 | `/help` | Show help information | `/help` |
 
@@ -501,7 +502,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **GitHub Issues**: [Create an issue](https://github.com/your-username/ChannelSenseTON/issues)
-- **Telegram**: @channelsense_support
+- **Telegram**: @userhort
 - **Email**: support@channelsense.com
 
 ---

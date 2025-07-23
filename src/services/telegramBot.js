@@ -152,12 +152,14 @@ Hello! I'm your AI assistant for activity analysis and rewarding participants wi
 • 📊 Analyze activity and engagement
 • 👥 Identify most active participants  
 • 🎭 Analyze community sentiment
+• 🤖 Custom AI analysis with specific questions
 • 💎 Reward weekly top contributors with NFTs
 
 📋 *Available commands:*
 • /analyze - activity analysis
 • /top - participant ranking
-• /sentiment - community sentiment  
+• /sentiment - community sentiment
+• /custom [query] - ask AI specific questions
 • /rewards - check NFT rewards
 • /guide - detailed instructions
 
@@ -474,6 +476,7 @@ Commands:
 • /analyze [period] - Analyze channel (day/week/month)
 • /top [number] - Show top users (default: 10)
 • /sentiment - Analyze channel sentiment
+• /custom [query] - Custom AI analysis with specific questions
 • /rewards - Check your NFT rewards
 • /guide - Complete usage guide
 • /help - Show this help
@@ -490,9 +493,75 @@ Features:
 • 💎 NFT rewards system
 • 🔗 TON blockchain integration
 
-Need help? Contact support: @channelsense_support`;
+Need help? Contact support: @userhort`;
 
       await this.bot.sendMessage(chatId, helpMessage);
+    });
+
+    // Custom AI analysis command
+    this.bot.onText(/\/custom(?:\s+(.+))?/, async (msg, match) => {
+      const chatId = msg.chat.id;
+      const userId = msg.from.id;
+      const customQuery = match[1];
+
+      if (msg.chat.type === 'private') {
+        await this.bot.sendMessage(chatId, '❌ This command can only be used in groups or channels.');
+        return;
+      }
+
+      if (!customQuery) {
+        const exampleMessage = `
+🤖 **Custom AI Analysis**
+
+Use this command to ask AI specific questions about channel activity.
+
+**Usage:** \`/custom your question\`
+
+**Examples:**
+• \`/custom Хто шукав навчання трейдингу за минулий тиждень?\`
+• \`/custom Хто задавав питання про мем коїни?\`
+• \`/custom Скільки було повідомлень зі згадуванням SOL за тиждень?\`
+• \`/custom Хто шукав маркетолога за минулий тиждень?\`
+• \`/custom Хто шукає партнерство?\`
+
+🔍 AI will analyze recent messages and provide relevant information with examples.
+        `;
+        
+        await this.bot.sendMessage(chatId, exampleMessage, { parse_mode: 'Markdown' });
+        return;
+      }
+
+      try {
+        await this.bot.sendChatAction(chatId, 'typing');
+        
+        // Get recent messages for analysis (last week by default)
+        const period = 'week';
+        const messages = await this.database.getRecentMessages(chatId, 200); // Get more messages for better analysis
+        
+        if (!messages || messages.length === 0) {
+          await this.bot.sendMessage(chatId, '❌ No recent messages found for analysis.');
+          return;
+        }
+
+        // Use AI service for custom analysis
+        const analysis = await this.aiService.customAnalysis(messages, customQuery, chatId);
+        
+        const responseMessage = `
+🔍 **Custom Analysis Result**
+
+**Query:** ${customQuery}
+
+${analysis}
+
+📊 **Analysis based on ${messages.length} recent messages**
+        `;
+
+        await this.bot.sendMessage(chatId, responseMessage, { parse_mode: 'Markdown' });
+
+      } catch (error) {
+        console.error('Custom analysis error:', error);
+        await this.bot.sendMessage(chatId, '❌ Error performing custom analysis. Please try again later.');
+      }
     });
 
     // Guide command for groups and channels (temporarily disabled)
@@ -539,7 +608,7 @@ Need help? Contact support: @channelsense_support`;
 • Bot considers quality, not just quantity
 • Actively participate in discussions
 
-🔗 *Support:* @channelsense_support
+🔗 *Support:* @userhort
 `;
       } else {
         guideMessage = `
