@@ -493,7 +493,7 @@ Features:
 • 💎 NFT rewards system
 • 🔗 TON blockchain integration
 
-Need help? Contact support: @channelsense_support`;
+Need help? Contact support: @userhort`;
 
       await this.bot.sendMessage(chatId, helpMessage);
     });
@@ -608,7 +608,7 @@ ${analysis}
 • Bot considers quality, not just quantity
 • Actively participate in discussions
 
-🔗 *Support:* @channelsense_support
+🔗 *Support:* @userhort
 `;
       } else {
         guideMessage = `

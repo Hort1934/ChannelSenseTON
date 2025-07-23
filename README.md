@@ -502,7 +502,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **GitHub Issues**: [Create an issue](https://github.com/your-username/ChannelSenseTON/issues)
-- **Telegram**: @channelsense_support
+- **Telegram**: @userhort
 - **Email**: support@channelsense.com
 
 ---
