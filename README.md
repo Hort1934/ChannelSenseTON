@@ -9,7 +9,7 @@ AI-Powered Telegram Channel Analytics with TON Blockchain Integration
 
 ## 🌟 Overview
 
-ChannelSense TON is an intelligent Telegram bot that analyzes channel activity, provides AI-driven insights, and rewards active community members with NFTs on the TON blockchain. Originally designed for Farcaster channels, this version is specifically adapted for Telegram communities and TON ecosystem.
+ChannelSense TON is an intelligent Telegram bot that analyzes channel activity, provides AI-driven insights, and rewards active community members with NFTs on the TON blockchain.This version is specifically adapted for Telegram communities and TON ecosystem.
 
 ## ✨ Features
 
