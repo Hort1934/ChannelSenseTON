@@ -547,16 +547,17 @@ Use this command to ask AI specific questions about channel activity.
         const analysis = await this.aiService.customAnalysis(messages, customQuery, chatId);
         
         const responseMessage = `
-🔍 **Custom Analysis Result**
+🔍 Custom Analysis Result
 
-**Query:** ${customQuery}
+Query: ${customQuery}
 
 ${analysis}
 
-📊 **Analysis based on ${messages.length} recent messages**
+📊 Analysis based on ${messages.length} recent messages
         `;
 
-        await this.bot.sendMessage(chatId, responseMessage, { parse_mode: 'Markdown' });
+        // Remove parse_mode to send as plain text
+        await this.bot.sendMessage(chatId, responseMessage);
 
       } catch (error) {
         console.error('Custom analysis error:', error);
