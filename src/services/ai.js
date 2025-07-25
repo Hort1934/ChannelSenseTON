@@ -444,6 +444,8 @@ Respond with valid JSON only.
         return '❌ **No text messages found** for analysis.';
       }
 
+      // ...existing code...
+
       const prompt = `
 You are an expert Telegram channel analyst. Analyze the provided messages to answer the user's specific question.
 
@@ -452,26 +454,24 @@ USER QUESTION: "${query}"
 CHANNEL MESSAGES (${messageContext.length} messages):
 ${JSON.stringify(messageContext, null, 2)}
 
-ANALYSIS INSTRUCTIONS:
+INSTRUCTIONS:
 1. Read through all messages carefully
 2. Find messages and users relevant to the query
 3. Provide specific examples with usernames and message content
 4. Count occurrences if asked for numbers
-5. Identify patterns and trends
-6. Present findings in a clear, structured format
 
 RESPONSE FORMAT:
 - Start with a direct answer to the question
-- List relevant users with examples of their messages
-- Include specific quotes from messages when relevant
-- Provide counts/statistics if asked
-- Use emojis and simple formatting (no complex markdown)
-- Keep response concise but informative
-- Format like: "User @username said: 'message text'"
-- DO NOT include message IDs or chat IDs in the response
+- List relevant users with examples
+- Use ONLY plain text, NO special formatting
+- NO asterisks, underscores, or other markdown
+- Format like: "User @username said: message text"
+- Keep response clean and simple
 
 Please respond in the same language as the query.
       `;
+
+// ...existing code...
 
       const response = await this.client.chat.completions.create({
         model: this.getModel(),
